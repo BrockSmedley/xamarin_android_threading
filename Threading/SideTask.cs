@@ -15,7 +15,6 @@ using Android.Util;
 
 namespace Threading {
 	[Service]
-	[IntentFilter(new String[] { "Threading.Threading.SideTaskService" })]
 	public class SideTaskService : Service {
 		SideTaskServiceBinder binder;
 
@@ -25,8 +24,6 @@ namespace Threading {
 
 		public override StartCommandResult OnStartCommand(Intent intent, StartCommandFlags flags, int startId) {
 			Log.Debug("SideTaskService", "SideTaskService started");
-			
-			StartServiceInForeground();
 
 			DoWork();
 			
@@ -45,19 +42,23 @@ namespace Threading {
 			return binder;
 		}
 
-		private void StartServiceInForeground() {
-			var ongoing = new Notification(Resource.Drawable.Icon, "SideTaskService in foreground");
-			var pendingIntent = PendingIntent.GetActivity(this, 0, new Intent(this, typeof(MainActivity)), 0);
-			ongoing.SetLatestEventInfo(this, "SideTaskService", "SideTaskService running in foreground", pendingIntent);
-
-			StartForeground((int)NotificationFlags.ForegroundService, ongoing);
-		}
-
 		private void DoWork() {
 			var t = new Thread(() => {
 				//the work
 				Log.Debug("work", "Doing work");
-				Thread.Sleep(5000);
+
+				int time = 0;
+				int duration = 5000;
+				int interval = 1000;
+
+				while (time < duration) {
+					Thread.Sleep(interval);
+					time += interval;
+					Log.Debug("time", (time/interval).ToString() + " seconds");
+
+				}
+
+				
 				Log.Debug("work", "Work complete");
 				//kill process once work is complete
 				StopSelf();

@@ -23,7 +23,7 @@ namespace Threading {
 
 			button.Click += delegate { 
 				// run task on another thread
-				StartService(new Intent("Threading.Threading.SideTaskService"));
+				StartService(new Intent(this, typeof(SideTaskService)));
 			};
 		}
 	}
