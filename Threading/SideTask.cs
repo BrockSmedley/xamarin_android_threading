@@ -15,57 +15,69 @@ using Android.Util;
 
 namespace Threading {
 	[Service]
-	[IntentFilter(new String[] { "Threading.Threading.CounterService" })]
-	public class CounterService : IntentService {
-		IBinder binder;
-		int time = 12;
-		public const string TimeUpdatedAction = "TimeUpdated";
+	public class SideTaskService : Service {
+		SideTaskServiceBinder binder;
 
-		protected override void OnHandleIntent(Intent intent) {
-			var timeIntent = new Intent(TimeUpdatedAction);
-			StartCount(timeIntent);
+		public SideTaskService() {
+			
 		}
 
-		//counts and sends an OrderedBroadcast every second
-		private void StartCount(Intent timeIntent) {
-				Log.Debug("work", "Counting");
+		public override StartCommandResult OnStartCommand(Intent intent, StartCommandFlags flags, int startId) {
+			Log.Debug("SideTaskService", "SideTaskService started");
 
-				int duration = 5000;
-				time = duration;
-				int interval = 1000;
-
-
-				while (time > 0) {
-					Thread.Sleep(interval);
-					Log.Debug("time", (time / interval).ToString() + " seconds");
-					time -= interval;
-
-					SendBroadcast(timeIntent, null);
-				}
-
-				Log.Debug("work", "Work complete");			
+			DoWork();
+			
+			//return base.OnStartCommand(intent, flags, startId);
+			return StartCommandResult.Sticky;
 		}
 
-		public int GetTime() {
-			OnHandleIntent(new Intent(TimeUpdatedAction));
-			return time;
+		public override void OnDestroy() {
+			base.OnDestroy();
+
+			Log.Debug("SideTaskService", "SideTaskService destroyed");
 		}
 
 		public override IBinder OnBind(Intent intent) {
-			binder = new CounterServiceBinder(this);
+			binder = new SideTaskServiceBinder(this);
 			return binder;
-		}		
-	}//end class
+		}
 
-	public class CounterServiceBinder : Binder {
-		CounterService service;
+		private void DoWork() {
+			var t = new Thread(() => {
+				//the work
+				Log.Debug("work", "Doing work");
 
-		public CounterServiceBinder(CounterService service) {
+				int time = 0;
+				int duration = 5000;
+				int interval = 1000;
+
+				while (time < duration) {
+					Thread.Sleep(interval);
+					time += interval;
+					Log.Debug("time", (time/interval).ToString() + " seconds");
+
+				}
+
+				
+				Log.Debug("work", "Work complete");
+				//kill process once work is complete
+				StopSelf();
+			});
+			//start doing the work
+			t.Start();
+		}
+	}
+
+	//Binder for the side task service
+	public class SideTaskServiceBinder : Binder {
+		SideTaskService service;
+
+		public SideTaskServiceBinder(SideTaskService service) {
 			this.service = service;
 		}
 
-		public CounterService GetCounterService() {
+		public SideTaskService GetSideTaskService() {
 			return service;
 		}
-	}//end class
-}//end namespace
+	}
+}
